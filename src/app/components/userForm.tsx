@@ -13,9 +13,10 @@ const initialFormData: UserFormData = {
 interface FormProps {
     onSubmit: (formData: UserFormData) => void;
     data?: UserFormData;
+    isEdit?: boolean;
 }
 
-const UserFormComponent: React.FC<FormProps> = ({ onSubmit, data }) => {
+const UserFormComponent: React.FC<FormProps> = ({ onSubmit, data, isEdit = false }) => {
     const [formData, setFormData] = useState<UserFormData>(
         initialFormData
     );
@@ -92,19 +93,21 @@ const UserFormComponent: React.FC<FormProps> = ({ onSubmit, data }) => {
                     required
                 />
             </div>
-            <div className="mb-4">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-600">
-                    Password:
-                </label>
-                <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={(e) => handleChange('password', e.target.value)}
-                    className="mt-1 p-2 border border-gray-300 rounded-md w-full"
-                    required
-                />
-            </div>
+            {isEdit ? null : (
+                <div className="mb-4">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-600">
+                        Password:
+                    </label>
+                    <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={(e) => handleChange('password', e.target.value)}
+                        className="mt-1 p-2 border border-gray-300 rounded-md w-full"
+                        required
+                    />
+                </div>
+            )}
             <div className="text-center space-x-4">
                 <button
                     type="submit"

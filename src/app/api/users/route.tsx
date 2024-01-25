@@ -1,7 +1,9 @@
 import axiosInstance from "@/app/lib/api";
 
-export async function getUsers() {
-    return await axiosInstance.get('/user');
+export async function getUsers(queryParams: any = {}) {
+    return await axiosInstance.get('/user', {
+        params: queryParams,
+    });
 }
 
 export async function getUserById(id: string) {

@@ -10,7 +10,6 @@ const initialFormData: UserFormData = {
     name: '',
     email: '',
     dateOfBirth: null,
-    password: '',
 };
 
 const UpdateUserForm = (data: any) => {
@@ -48,7 +47,7 @@ const UpdateUserForm = (data: any) => {
     return (
         <div>
             <h1 className='text-center'>Detail Page</h1>
-            <UserFormComponent onSubmit={handleUpdate} data={initialValues} />
+            <UserFormComponent onSubmit={handleUpdate} data={initialValues} isEdit={true} />
         </div>
     );
 };

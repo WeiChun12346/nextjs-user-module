@@ -28,7 +28,7 @@ const UsersForm = () => {
 	];
 	useEffect(() => {
 		const getUsers = async () => {
-        		await refreshPage();
+        	await refreshPage();
         };
         if (data.length <= 0) {
             getUsers();

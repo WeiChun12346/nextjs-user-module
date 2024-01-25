@@ -3,6 +3,7 @@ import moment from 'moment';
 import UserFormComponent from '@/app/components/userForm'
 import { UserFormData } from '@/app/interfaces/userInterface';
 import { createUser } from '@/app/api/users/route';
+import { useRouter } from 'next/navigation';
 
 const initialFormData: UserFormData = {
     name: '',
@@ -12,11 +13,17 @@ const initialFormData: UserFormData = {
 };
 
 const CreateUserForm = () => {
+    const router = useRouter();
     const handleSubmit = async (formData: UserFormData) => {
         const formattedDate = formData.dateOfBirth
             ? moment(formData.dateOfBirth).startOf('day').toISOString()
             : null;
-        await createUser({ ...formData, dateOfBirth: formattedDate })
+        await createUser({ ...formData, dateOfBirth: formattedDate }).then(response => {
+            console.log('Success:', response.data);
+            router.push('/users');
+        }).catch(error => {
+            console.log('Error:', error);
+        });
     };
 
     return (

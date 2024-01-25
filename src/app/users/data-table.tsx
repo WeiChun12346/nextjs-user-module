@@ -1,10 +1,14 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
-    ColumnDef,
+    ColumnFiltersState,
     SortingState,
     flexRender,
     getCoreRowModel,
+    getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
     useReactTable,
@@ -12,7 +16,7 @@ import {
 import React from "react"
 
 interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[]
+    columns: any[]
     data: TData[]
     actions: any
 }
@@ -23,6 +27,8 @@ export function DataTable<TData, TValue>({
     actions,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+    const [filtering, setFiltering] = React.useState("");
     const table = useReactTable({
         data,
         columns,
@@ -30,37 +36,62 @@ export function DataTable<TData, TValue>({
         getPaginationRowModel: getPaginationRowModel(),
         onSortingChange: setSorting,
         getSortedRowModel: getSortedRowModel(),
+        onColumnFiltersChange: setColumnFilters,
+        getFilteredRowModel: getFilteredRowModel(),
         state: {
             sorting,
+            columnFilters,
+            globalFilter: filtering,
         },
+        onGlobalFilterChange: setFiltering,
     })
 
     return (
         <div>
+            <div className="flex items-center py-4">
+                <Input
+                    placeholder="Searching..."
+                    value={filtering}
+                    onChange={(e) => setFiltering(e.target.value)}
+                    className="max-w-sm"
+                />
+            </div>
             <div className="rounded-md border">
-                <table className="w-full">
-                    <thead>
+                <Table className="w-full">
+                    <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
-                            <tr key={headerGroup.id}>
+                            <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
                                     return (
-                                        <th key={header.id}>
+                                        <TableHead key={header.id}>
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(
                                                     header.column.columnDef.header,
                                                     header.getContext()
                                                 )}
-                                        </th>
+                                            {header.column.getCanFilter() ? (
+                                                <div>
+                                                    <Input
+                                                        value={
+                                                            (header.column.getFilterValue() as string) ?? ""
+                                                        }
+                                                        onChange={(e) =>
+                                                            header.column.setFilterValue(e.target.value)
+                                                        }
+                                                    />
+                                                </div>
+                                            ) : null}
+                                        </TableHead >
                                     )
                                 })}
-                            </tr>
+                            </TableRow>
                         ))}
-                    </thead>
-                    <tbody>
+                    </TableHeader>
+                    <TableBody>
                         {table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (
-                                <tr
+                                <TableRow
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
                                 >
@@ -70,11 +101,11 @@ export function DataTable<TData, TValue>({
                                             return columnDef && columnDef.header != 'Actions';
                                         })
                                         .map((cell) => (
-                                            <td key={cell.id}>
+                                            <TableCell key={cell.id}>
                                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                            </td>
+                                            </TableCell>
                                         ))}
-                                    <td className="text-center space-x-4">
+                                    <TableCell className="text-center space-x-4">
                                         {actions.map((action: any) => (
                                             <button
                                                 className={action.className}
@@ -84,36 +115,42 @@ export function DataTable<TData, TValue>({
                                                 {action.label}
                                             </button>
                                         ))}
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             ))
                         ) : (
-                            <tr>
-                                <td colSpan={columns.length} className="h-24 text-center">
+                            <TableRow>
+                                <TableCell colSpan={columns.length} className="h-24 text-center">
                                     No results.
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         )}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
             <div className="flex items-center justify-end space-x-2 py-4">
-                <button
-                    // variant="outline"
-                    // size="sm"
+                <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => table.previousPage()}
                     disabled={!table.getCanPreviousPage()}
                 >
                     Previous
-                </button>
-                <button
-                    // variant="outline"
-                    // size="sm"
+                </Button>
+                <span>
+                    Page{' '}
+                    <strong>
+                        {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                    </strong>{' '}
+                </span>
+                <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => table.nextPage()}
                     disabled={!table.getCanNextPage()}
                 >
                     Next
-                </button>
+                </Button>
             </div>
         </div>
     )
