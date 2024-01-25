@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { UserFormData } from '../interfaces/userInterface';
+import { useRouter } from 'next/navigation';
 
 const initialFormData: UserFormData = {
     name: '',
@@ -17,6 +18,7 @@ interface FormProps {
 }
 
 const UserFormComponent: React.FC<FormProps> = ({ onSubmit, data, isEdit = false }) => {
+    const router = useRouter();
     const [formData, setFormData] = useState<UserFormData>(
         initialFormData
     );
@@ -44,6 +46,10 @@ const UserFormComponent: React.FC<FormProps> = ({ onSubmit, data, isEdit = false
 
     const handleCancel = (): void => {
         setFormData(initialFormData);
+    };
+
+    const handleBack = (): void => {
+        router.back()
     };
 
     return (
@@ -115,13 +121,23 @@ const UserFormComponent: React.FC<FormProps> = ({ onSubmit, data, isEdit = false
                 >
                     Submit
                 </button>
-                <button
-                    type="button"
-                    className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring focus:border-gray-300"
-                    onClick={handleCancel}
-                >
-                    Cancel
-                </button>
+                {!isEdit ? (
+                    <button
+                        type="button"
+                        className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring focus:border-gray-300"
+                        onClick={handleCancel}
+                    >
+                        Cancel
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring focus:border-gray-300"
+                        onClick={handleBack}
+                    >
+                        Back
+                    </button>
+                )}
             </div>
         </form>
     );
