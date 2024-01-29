@@ -1,157 +1,154 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-    ColumnFiltersState,
-    SortingState,
-    flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
-} from "@tanstack/react-table"
-import React from "react"
+import { MRT_ColumnFiltersState, MRT_PaginationState, MRT_SortingState, MaterialReactTable, useMaterialReactTable } from "material-react-table"
+import React, { useEffect, useState } from "react"
+import { deleteUser, getUsers } from "../api/users/route"
+import { useRouter } from "next/navigation";
 
-interface DataTableProps<TData, TValue> {
-    columns: any[]
-    data: TData[]
-    actions: any
-}
+type User = {
+    id: string,
+    name: string;
+    dateOfBirth: Date;
+    updatedDate: Date;
+};
 
-export function DataTable<TData, TValue>({
-    columns,
-    data,
-    actions,
-}: DataTableProps<TData, TValue>) {
-    const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-    const [filtering, setFiltering] = React.useState("");
-    const table = useReactTable({
-        data,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        onSortingChange: setSorting,
-        getSortedRowModel: getSortedRowModel(),
-        onColumnFiltersChange: setColumnFilters,
-        getFilteredRowModel: getFilteredRowModel(),
-        state: {
-            sorting,
-            columnFilters,
-            globalFilter: filtering,
+export function DataTable({ columns, setIsRefresh, isRefresh }: { columns: any, setIsRefresh: any, isRefresh: any }) {
+    const router = useRouter();
+    const editButton = {
+        label: 'Edit',
+        onClick: (id: any) => {
+            router.push(`users/${id}`)
         },
-        onGlobalFilterChange: setFiltering,
-    })
+        className: "bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
+    }
+    const deleteButton = {
+        label: 'Delete',
+        onClick: async (id: any) => {
+            await deleteUser(id);
+            setIsRefresh(true);
+        },
+        className: "bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 focus:outline-none focus:ring focus:border-red-300"
+    }
+    //data and fetching state
+    const [data, setData] = useState<User[]>([]);
+    const [isError, setIsError] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isRefetching, setIsRefetching] = useState(false);
+    const [rowCount, setRowCount] = useState(0);
+    const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
+    const [globalFilter, setGlobalFilter] = useState('');
+    const [sorting, setSorting] = useState<MRT_SortingState>([]);
+    const [pagination, setPagination] = useState<MRT_PaginationState>({
+        pageIndex: 0,
+        pageSize: 10,
+    });
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!data.length) {
+                setIsLoading(true);
+            } else {
+                setIsRefetching(true);
+            }
+            try {
+                const filters = columnFilters.reduce((acc: any, obj: any) => {
+                    acc[obj.id] = obj.value;
+                    return acc;
+                }, {})
+                const { data } = await getUsers({
+                    ...filters,
+                    page: pagination.pageIndex + 1,
+                    limit: pagination.pageSize,
+                    sortBy: sorting[0]?.id,
+                    sortDirection: !!sorting[0]?.desc ? 'asc' : 'desc'
+                });
+                setData(data.data);
+                setRowCount(data.total);
+            } catch (error) {
+                setIsError(true);
+                console.error(error);
+                return;
+            }
+            setIsError(false);
+            setIsLoading(false);
+            setIsRefetching(false);
+        };
+        if (isRefresh) {
+            setSorting([])
+            setColumnFilters([]);
+            setPagination({
+                pageIndex: 0,
+                pageSize: 10
+            })
+        }
+        fetchData();
+        setIsRefresh(false);
+    }, [
+        columnFilters,
+        globalFilter,
+        pagination.pageIndex,
+        pagination.pageSize,
+        sorting,
+        isRefresh,
+        setIsRefresh
+    ]);
+
+    const table = useMaterialReactTable({
+        columns,
+        data,
+        enableRowSelection: false,
+        getRowId: (row) => row.id,
+        initialState: { showColumnFilters: true },
+        manualFiltering: true,
+        manualPagination: true,
+        manualSorting: true,
+        muiToolbarAlertBannerProps: isError
+            ? {
+                color: 'error',
+                children: 'Error loading data',
+            }
+            : undefined,
+        onColumnFiltersChange: setColumnFilters,
+        onGlobalFilterChange: setGlobalFilter,
+        onPaginationChange: setPagination,
+        onSortingChange: setSorting,
+        muiPaginationProps: {
+            rowsPerPageOptions: [5, 10, 20],
+            showFirstButton: false,
+            showLastButton: false,
+        },
+        rowCount,
+        state: {
+            columnFilters,
+            globalFilter,
+            isLoading,
+            pagination,
+            showAlertBanner: isError,
+            showProgressBars: isRefetching,
+            sorting,
+        },
+        enableTopToolbar: false,
+        enableRowActions: true,
+        positionActionsColumn: 'last',
+        displayColumnDefOptions: {
+            'mrt-row-actions': {
+                header: 'Actions',
+                size: 130,
+            },
+        },
+        renderRowActions: ({ row }) => [
+            <div key='actions' className="space-x-4">
+                <button className={editButton.className} key="edit" onClick={() => editButton.onClick(row.id)}>
+                    Edit
+                </button>
+                <button className={deleteButton.className} key="delete" onClick={() => deleteButton.onClick(row.id)}>
+                    Delete
+                </button>
+            </div>
+        ],
+    });
 
     return (
-        <div>
-            <div className="flex items-center py-4">
-                <Input
-                    placeholder="Searching..."
-                    value={filtering}
-                    onChange={(e) => setFiltering(e.target.value)}
-                    className="max-w-sm"
-                />
-            </div>
-            <div className="rounded-md border">
-                <Table className="w-full">
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => {
-                                    return (
-                                        <TableHead key={header.id}>
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
-                                                )}
-                                            {header.column.getCanFilter() ? (
-                                                <div>
-                                                    <Input
-                                                        value={
-                                                            (header.column.getFilterValue() as string) ?? ""
-                                                        }
-                                                        onChange={(e) =>
-                                                            header.column.setFilterValue(e.target.value)
-                                                        }
-                                                    />
-                                                </div>
-                                            ) : null}
-                                        </TableHead >
-                                    )
-                                })}
-                            </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={row.getIsSelected() && "selected"}
-                                >
-                                    {row.getVisibleCells()
-                                        .filter(cell => {
-                                            const columnDef = cell.column.columnDef;
-                                            return columnDef && columnDef.header != 'Actions';
-                                        })
-                                        .map((cell) => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                            </TableCell>
-                                        ))}
-                                    <TableCell className="text-center space-x-4">
-                                        {actions.map((action: any) => (
-                                            <button
-                                                className={action.className}
-                                                key={action.label}
-                                                onClick={() => action.onClick(row.original)}
-                                            >
-                                                {action.label}
-                                            </button>
-                                        ))}
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No results.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-            <div className="flex items-center justify-end space-x-2 py-4">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.previousPage()}
-                    disabled={!table.getCanPreviousPage()}
-                >
-                    Previous
-                </Button>
-                <span>
-                    Page{' '}
-                    <strong>
-                        {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-                    </strong>{' '}
-                </span>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => table.nextPage()}
-                    disabled={!table.getCanNextPage()}
-                >
-                    Next
-                </Button>
-            </div>
-        </div>
+        <MaterialReactTable table={table} />
     )
 }
